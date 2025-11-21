@@ -51,9 +51,15 @@ set "LibraryDirectoryPath=%ScriptDirectory%lib"
 set "LogsDirectoryPath=%ScriptDirectory%logs"
 set "LogFilePath=%LogsDirectoryPath%\uninstall_log.txt"
 set "OfficeTemplateLib=%ScriptDirectory%1-2. ResolveAppProperties.bat"
+set "MRUTools=%ScriptDirectory%1-2. MRU-PathResolver.bat"
 
 if not exist "%OfficeTemplateLib%" (
     echo [ERROR] Shared library not found: "%OfficeTemplateLib%"
+    exit /b 1
+)
+
+if not exist "%MRUTools%" (
+    echo [ERROR] MRU resolver not found: "%MRUTools%"
     exit /b 1
 )
 
@@ -518,47 +524,21 @@ setlocal EnableDelayedExpansion
 set "APP_NAME=%GAM_APP%"
 set "MRU_TARGET_PATHS="
 
-call :ResolveAppProperties "!APP_NAME!"
-echo [DEBUG] Entering GetAppMruTargets with parameters %*
-echo .
-echo [DEBUG] Resolved properties for !APP_NAME!: PROP_REG_NAME=!PROP_REG_NAME!
-echo.
-if defined PROP_REG_NAME (
-    set "MRU_VAR=!PROP_MRU_VAR!"
-    set "MRU_PATH="
-    set "MRU_CONTAINER_PATH="
-    set "MRU_CONTAINER_ID="
+set "MRU_SHORT="
+if /I "!APP_NAME!"=="WORD" set "MRU_SHORT=WORD"
+if /I "!APP_NAME!"=="POWERPOINT" set "MRU_SHORT=PPT"
+if /I "!APP_NAME!"=="EXCEL" set "MRU_SHORT=EXCEL"
 
-    call :DetectAdalContainer MRU_CONTAINER_ID MRU_CONTAINER_PATH "!PROP_REG_NAME!"
+if defined MRU_SHORT if exist "%MRUTools%" (
+    call "%MRUTools%" :DetectMRUPath "!APP_NAME!" ADAL
+    call "%MRUTools%" :DetectMRUPath "!APP_NAME!" LIVEID
 
-
-    if not errorlevel 1 if defined MRU_CONTAINER_PATH set "MRU_PATH=!MRU_CONTAINER_PATH!\File MRU"
-
-    if not defined MRU_PATH (
-        call :DetectMRUPath "!APP_NAME!"
-        for /f "tokens=2 delims==" %%V in ('set !MRU_VAR! 2^>nul') do set "MRU_PATH=%%V"
-    )
-
-    if not defined MRU_PATH (
-        set "MRU_PATH=HKCU\Software\Microsoft\Office\16.0\!PROP_REG_NAME!\Recent Templates\File MRU"
-    )
-
-    set "!MRU_VAR!=!MRU_PATH!"
-    if defined MRU_PATH set "MRU_TARGET_PATHS=""!MRU_PATH!"""
-    if defined MRU_TARGET_PATHS set "MRU_TARGET_PATHS=!MRU_TARGET_PATHS:""="!"
-
-    set "AUTH_CONTAINER_TARGETS="
-    call :CollectAuthContainerPaths AUTH_CONTAINER_TARGETS "!PROP_REG_NAME!"
-    if defined AUTH_CONTAINER_TARGETS (
-        set "AUTH_CONTAINER_TARGETS=!AUTH_CONTAINER_TARGETS:""="!"
-        for %%C in (!AUTH_CONTAINER_TARGETS!) do (
-            set "CURRENT_CONTAINER=%%~C"
-            if not "!CURRENT_CONTAINER!"=="" call :AppendUniquePath MRU_TARGET_PATHS "!CURRENT_CONTAINER!\File MRU"
+    for %%M in (ADAL LIVEID) do (
+        set "MRU_VAR=!MRU_SHORT!_MRU_%%M"
+        for /f "tokens=2 delims==" %%V in ('set !MRU_VAR! 2^>nul') do (
+            if not "%%~V"=="" call :AppendUniquePath MRU_TARGET_PATHS "%%~V"
         )
     )
-
-    if not defined MRU_TARGET_PATHS set "MRU_TARGET_PATHS=""!MRU_PATH!"""
-    if defined MRU_TARGET_PATHS set "MRU_TARGET_PATHS=!MRU_TARGET_PATHS:""="!"
 )
 
 set "RESULT=%MRU_TARGET_PATHS%"
@@ -603,7 +583,7 @@ call "%OfficeTemplateLib%" :AppendUniquePath %*
 exit /b %errorlevel%
 
 :DetectMRUPath
-call "%OfficeTemplateLib%" :DetectMRUPath %*
+call "%MRUTools%" :DetectMRUPath %*
 exit /b %errorlevel%
 
 :ResolveAppProperties

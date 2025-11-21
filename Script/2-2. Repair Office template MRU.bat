@@ -1,6 +1,14 @@
 @echo off
 setlocal EnableDelayedExpansion
 
+set "ScriptDirectory=%~dp0"
+set "MRUTools=%ScriptDirectory%1-2. MRU-PathResolver.bat"
+
+if not exist "%MRUTools%" (
+    echo [ERROR] No se encontró el resolvedor de MRU en "%MRUTools%"
+    exit /b 1
+)
+
 echo ==========================================================
 echo   RESET OFFICE TEMPLATE MRU LISTS
 echo ==========================================================
@@ -44,41 +52,21 @@ setlocal EnableDelayedExpansion
 set "APP_NAME=%GAM_APP%"
 set "MRU_TARGET_PATHS="
 
-call :ResolveAppProperties "!APP_NAME!"
-if defined PROP_REG_NAME (
-    set "MRU_VAR=!PROP_MRU_VAR!"
-    set "MRU_PATH="
-    set "MRU_CONTAINER_PATH="
-    set "MRU_CONTAINER_ID="
+set "MRU_SHORT="
+if /I "!APP_NAME!"=="WORD" set "MRU_SHORT=WORD"
+if /I "!APP_NAME!"=="POWERPOINT" set "MRU_SHORT=PPT"
+if /I "!APP_NAME!"=="EXCEL" set "MRU_SHORT=EXCEL"
 
-    call :DetectAdalContainer MRU_CONTAINER_ID MRU_CONTAINER_PATH "!PROP_REG_NAME!"
-    if not errorlevel 1 if defined MRU_CONTAINER_PATH set "MRU_PATH=!MRU_CONTAINER_PATH!\File MRU"
+if defined MRU_SHORT (
+    call "%MRUTools%" :DetectMRUPath "!APP_NAME!" ADAL
+    call "%MRUTools%" :DetectMRUPath "!APP_NAME!" LIVEID
 
-    if not defined MRU_PATH (
-        call :DetectMRUPath "!APP_NAME!"
-        for /f "tokens=2 delims==" %%V in ('set !MRU_VAR! 2^>nul') do set "MRU_PATH=%%V"
-    )
-
-    if not defined MRU_PATH (
-        set "MRU_PATH=HKCU\Software\Microsoft\Office\16.0\!PROP_REG_NAME!\Recent Templates\File MRU"
-    )
-
-    set "!MRU_VAR!=!MRU_PATH!"
-    if defined MRU_PATH set "MRU_TARGET_PATHS=""!MRU_PATH!"""
-    if defined MRU_TARGET_PATHS set "MRU_TARGET_PATHS=!MRU_TARGET_PATHS:""="!"
-
-    set "AUTH_CONTAINER_TARGETS="
-    call :CollectAuthContainerPaths AUTH_CONTAINER_TARGETS "!PROP_REG_NAME!"
-    if defined AUTH_CONTAINER_TARGETS (
-        set "AUTH_CONTAINER_TARGETS=!AUTH_CONTAINER_TARGETS:""="!"
-        for %%C in (!AUTH_CONTAINER_TARGETS!) do (
-            set "CURRENT_CONTAINER=%%~C"
-            if not "!CURRENT_CONTAINER!"=="" call :AppendUniquePath MRU_TARGET_PATHS "!CURRENT_CONTAINER!\File MRU"
+    for %%M in (ADAL LIVEID) do (
+        set "MRU_VAR=!MRU_SHORT!_MRU_%%M"
+        for /f "tokens=2 delims==" %%V in ('set !MRU_VAR! 2^>nul') do (
+            if not "%%~V"=="" call :AppendUniquePath MRU_TARGET_PATHS "%%~V"
         )
     )
-
-    if not defined MRU_TARGET_PATHS set "MRU_TARGET_PATHS=""!MRU_PATH!"""
-    if defined MRU_TARGET_PATHS set "MRU_TARGET_PATHS=!MRU_TARGET_PATHS:""="!"
 )
 
 set "RESULT=%MRU_TARGET_PATHS%"
@@ -283,59 +271,7 @@ for %%# in (1) do (
 exit /b 0
 
 :DetectMRUPath
-rem Args: APP_NAME
-setlocal enabledelayedexpansion
-set "APP_NAME=%~1"
-call :ResolveAppProperties "!APP_NAME!"
-if not defined PROP_REG_NAME (
-    endlocal
-    exit /b 1
-)
-set "MRU_VAR=!PROP_MRU_VAR!"
-set "MRU_PATH="
-set "MRU_CONTAINER_PATH="
-
-call :DetectAdalContainer MRU_CONTAINER_ID MRU_CONTAINER_PATH "!PROP_REG_NAME!"
-if not errorlevel 1 if defined MRU_CONTAINER_PATH (
-    set "MRU_PATH=!MRU_CONTAINER_PATH!\File MRU"
-)
-
-for %%V in (16.0 15.0 14.0 12.0) do (
-    if not defined MRU_PATH (
-        set "BASE=HKCU\Software\Microsoft\Office\%%V\!PROP_REG_NAME!\Recent Templates"
-        for /f "delims=" %%K in ('reg query "!BASE!" /s /v "File MRU" 2^>nul ^| findstr /I "HKEY_CURRENT_USER"') do (
-            set "MRU_PATH=%%K\File MRU"
-            goto :found
-        )
-    )
-)
-:found
-if not defined MRU_PATH (
-    set "MRU_PATH=HKCU\Software\Microsoft\Office\16.0\!PROP_REG_NAME!\Recent Templates\File MRU"
-)
-endlocal & set "%MRU_VAR%=%MRU_PATH%"
-exit /b
-
-:ResolveAppProperties
-rem Internal helper. Args: APP_NAME
-set "APP_UP=%~1"
-if /I "%APP_UP%"=="WORD" (
-    set "PROP_REG_NAME=Word"
-    set "PROP_MRU_VAR=WORD_MRU_PATH"
-    set "PROP_COUNTER_VAR=GLOBAL_ITEM_COUNT_WORD"
-) else if /I "%APP_UP%"=="POWERPOINT" (
-    set "PROP_REG_NAME=PowerPoint"
-    set "PROP_MRU_VAR=PPT_MRU_PATH"
-    set "PROP_COUNTER_VAR=GLOBAL_ITEM_COUNT"
-) else if /I "%APP_UP%"=="EXCEL" (
-    set "PROP_REG_NAME=Excel"
-    set "PROP_MRU_VAR=EXCEL_MRU_PATH"
-    set "PROP_COUNTER_VAR=GLOBAL_ITEM_COUNT_EXCEL"
-) else (
-    set "PROP_REG_NAME="
-    set "PROP_MRU_VAR="
-    set "PROP_COUNTER_VAR="
-)
+call "%MRUTools%" :DetectMRUPath %*
 exit /b
 
 :ClearMruKey
