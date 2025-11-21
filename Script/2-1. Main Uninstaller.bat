@@ -370,7 +370,6 @@ endlocal
 exit /b 0
 
 :CleanCustomTemplateFiles
-echo [FLAG] CleanCustomTemplateFiles invoked with parameters %*
 set "CCF_TARGET_DIR=%~1"
 set "CCF_EXT_LIST=%~2"
 set "CCF_BASE_DIR=%~3"
@@ -484,18 +483,25 @@ exit /b 0
 
 rem --- ResetOfficeTemplateMruLists ==============================
 :ResetOfficeTemplateMruLists
+echo.
+echo [FLAG] ResetOfficeTemplateMruLists invoked with parameters %*
+echo.
 setlocal enabledelayedexpansion
 set "ROML_LOG_FILE=%~1"
 set "ROML_DESIGN_MODE=%~2"
+echo flag 1
 if not defined ROML_DESIGN_MODE set "ROML_DESIGN_MODE=%IsDesignModeEnabled%"
 
 set "ROML_OFFICE_APPS=Word PowerPoint Excel"
-
+echo flag 2
 for %%A in (!ROML_OFFICE_APPS!) do (
+    echo flag 2.1
     set "ROML_TARGETS="
     call :GetAppMruTargets ROML_TARGETS "%%~A"
-
+    echo [INFO] Processing %%~A template MRU targets: !ROML_TARGETS!
+    echo flag 2.2
     if defined ROML_TARGETS (
+        echo flag 2.2.1
         for %%T in (!ROML_TARGETS!) do (
             set "ROML_CURRENT=%%~T"
             if not "!ROML_CURRENT!"=="" (
@@ -509,15 +515,18 @@ endlocal
 exit /b 0
 
 :GetAppMruTargets
+echo [FLAG] GetAppMruTargets invoked with parameters %*
 set "GAM_OUT=%~1"
 set "GAM_APP=%~2"
 if "%GAM_OUT%"=="" exit /b 0
-
+echo flag GetAppMruTargets.1
 setlocal EnableDelayedExpansion
 set "APP_NAME=%GAM_APP%"
 set "MRU_TARGET_PATHS="
-
+echo [FLAG] Resolving MRU targets for app: !APP_NAME!
+echo [FLAG] Calling ResolveAppProperties...
 call :ResolveAppProperties "!APP_NAME!"
+echo [FLAG] Resolved properties: REG_NAME=!PROP_REG_NAME!, MRU_VAR=!PROP_MRU_VAR!
 if defined PROP_REG_NAME (
     set "MRU_VAR=!PROP_MRU_VAR!"
     set "MRU_PATH="
@@ -602,10 +611,13 @@ call "%OfficeTemplateLib%" :DetectMRUPath %*
 exit /b %errorlevel%
 
 :ResolveAppProperties
+echo [Debug] dentro el wrapper ResolveAppProperties por ir a OfficeTemplateLib
+echo [FLAG] office_template_lib %OfficeTemplateLib%
 call "%OfficeTemplateLib%" :ResolveAppProperties %*
 exit /b %errorlevel%
 
 :ClearMruKey
+echo [FLAG] ClearMruKey invoked with parameters %*
 setlocal DisableDelayedExpansion
 set "CMK_KEY=%~1"
 set "CMK_LABEL=%~2"
