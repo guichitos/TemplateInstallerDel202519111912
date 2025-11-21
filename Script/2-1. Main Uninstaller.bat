@@ -47,6 +47,8 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [%DATE% %TIME%] --- START UNINSTALL --- > "%LogFilePath%"
     title OFFICE TEMPLATE UNINSTALLER - DEBUG MODE
     echo [DEBUG] Running from: %BaseDirectoryPath%
+    echo [DEBUG] Launch directory: %LaunchDirectoryPath%
+    echo [DEBUG] Payload detection: Base=%BaseHasPayload%, Launch=%LaunchHasPayload%
 )
 
 call :DebugTrace "[FLAG] Target paths and logging configured."
@@ -344,16 +346,26 @@ set "CUSTOM_GENERIC_SKIP_LIST=Normal.dotx NormalEmail.dotx Blank.potx Book.xltx 
 
 set "CUSTOM_PAYLOAD_TRACK="
 set /a CUSTOM_PAYLOAD_COUNT=0
-for %%E in (.dotx .dotm .potx .potm .xltx .xltm .thmx) do (
-    for /f "delims=" %%F in ('dir /A-D /B /S "!BASE_DIR!*%%~E" 2^>nul') do (
-        set "CUSTOM_PAYLOAD_TRACK=!CUSTOM_PAYLOAD_TRACK!;%%~nxF;"
-        set /a CUSTOM_PAYLOAD_COUNT+=1
+for %%S in ("!BASE_DIR!" "!BASE_DIR!payload\\" "!BASE_DIR!templates\\" "!BASE_DIR!extracted\\" "%ScriptDirectory%") do (
+    if exist "%%~S" (
+        set "CCT_SOURCE_COUNT=0"
+        for %%E in (.dotx .dotm .potx .potm .xltx .xltm .thmx) do (
+            for /f "delims=" %%F in ('dir /A-D /B /S "%%~S*%%~E" 2^>nul') do (
+                set "CUSTOM_PAYLOAD_TRACK=!CUSTOM_PAYLOAD_TRACK!;%%~nxF;"
+                set /a CUSTOM_PAYLOAD_COUNT+=1
+                set /a CCT_SOURCE_COUNT+=1
+            )
+        )
+        if /I "!DESIGN_MODE!"=="true" if !CCT_SOURCE_COUNT! GTR 0 call :DebugTrace "    - %%~S (!CCT_SOURCE_COUNT! payloads)"
+    ) else (
+        if /I "!DESIGN_MODE!"=="true" call :DebugTrace "    - %%~S (missing)"
     )
 )
 
 if /I "!DESIGN_MODE!"=="true" (
     call :DebugTrace "[DEBUG] Catalogued !CUSTOM_PAYLOAD_COUNT! installer payload(s) for custom template comparison."
     if defined CUSTOM_PAYLOAD_TRACK call :DebugTrace "        Payload names: !CUSTOM_PAYLOAD_TRACK!"
+    if "!CUSTOM_PAYLOAD_COUNT!"=="0" call :DebugTrace "        [WARN] No installer payloads detected; custom template deletes will be skipped."
 )
 
 call :CleanCustomTemplateFiles "!WORD_DIR!" ".dotx .dotm" "!BASE_DIR!" "%LOG_FILE%" "!DESIGN_MODE!" "Word custom templates"
