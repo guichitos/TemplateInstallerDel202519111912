@@ -47,6 +47,8 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [%DATE% %TIME%] --- START UNINSTALL --- > "%LogFilePath%"
     title OFFICE TEMPLATE UNINSTALLER - DEBUG MODE
     echo [DEBUG] Running from: %BaseDirectoryPath%
+    echo [DEBUG] Launch directory: %LaunchDirectoryPath%
+    echo [DEBUG] Payload detection: Base=%BaseHasPayload%, Launch=%LaunchHasPayload%
 )
 
 call :DebugTrace "[FLAG] Target paths and logging configured."
@@ -223,6 +225,13 @@ for %%F in ("!HP_PATH!*.dot*" "!HP_PATH!*.pot*" "!HP_PATH!*.xlt*" "!HP_PATH!*.th
     if exist "%%~fF" set "HP_FOUND=1"
 )
 
+if "!HP_FOUND!"=="0" (
+    for /f "delims=" %%F in ('dir /A-D /B /S "!HP_PATH!*.dot*" 2^>nul') do set "HP_FOUND=1"
+    if "!HP_FOUND!"=="0" for /f "delims=" %%F in ('dir /A-D /B /S "!HP_PATH!*.pot*" 2^>nul') do set "HP_FOUND=1"
+    if "!HP_FOUND!"=="0" for /f "delims=" %%F in ('dir /A-D /B /S "!HP_PATH!*.xlt*" 2^>nul') do set "HP_FOUND=1"
+    if "!HP_FOUND!"=="0" for /f "delims=" %%F in ('dir /A-D /B /S "!HP_PATH!*.thmx" 2^>nul') do set "HP_FOUND=1"
+)
+
 :HasTemplatePayloadEnd
 set "HP_RESULT=!HP_FOUND!"
 endlocal & if not "%HP_OUT%"=="" set "%HP_OUT%=%HP_RESULT%"
@@ -342,6 +351,41 @@ set /a CUSTOM_ERROR_COUNT=0
 set /a CUSTOM_TOTAL_CANDIDATES=0
 set "CUSTOM_GENERIC_SKIP_LIST=Normal.dotx NormalEmail.dotx Blank.potx Book.xltx Normal.dotm NormalEmail.dotm Blank.potm Book.xltm Sheet.xltx Sheet.xltm"
 
+set "CUSTOM_PAYLOAD_TRACK="
+set /a CUSTOM_PAYLOAD_COUNT=0
+for %%S in ("!BASE_DIR!" "!BASE_DIR!payload\\" "!BASE_DIR!templates\\" "!BASE_DIR!extracted\\" "%ScriptDirectory%" "%LaunchDirectoryPath%") do (
+    if exist "%%~S" (
+        set "CCT_SOURCE_COUNT=0"
+        for %%E in (.dotx .dotm .potx .potm .xltx .xltm .thmx) do (
+            for /f "delims=" %%F in ('dir /A-D /B /S "%%~S*%%~E" 2^>nul') do (
+                set "CUSTOM_PAYLOAD_TRACK=!CUSTOM_PAYLOAD_TRACK!;%%~nxF;"
+                set /a CUSTOM_PAYLOAD_COUNT+=1
+                set /a CCT_SOURCE_COUNT+=1
+            )
+        )
+        if /I "!DESIGN_MODE!"=="true" if !CCT_SOURCE_COUNT! GTR 0 call :DebugTrace "    - %%~S (!CCT_SOURCE_COUNT! payloads)"
+    ) else (
+        if /I "!DESIGN_MODE!"=="true" call :DebugTrace "    - %%~S (missing)"
+    )
+)
+
+if /I "!DESIGN_MODE!"=="true" (
+    call :DebugTrace "[DEBUG] Catalogued !CUSTOM_PAYLOAD_COUNT! installer payload(s) for custom template comparison."
+    if defined CUSTOM_PAYLOAD_TRACK call :DebugTrace "        Payload names: !CUSTOM_PAYLOAD_TRACK!"
+    if "!CUSTOM_PAYLOAD_COUNT!"=="0" call :DebugTrace "        [WARN] No installer payloads detected; custom template deletes will be skipped."
+    for %%E in (.dotx .dotm .potx .potm .xltx .xltm .thmx) do (
+        set "CCT_PREVIEW="
+        set /a CCT_PREVIEW_COUNT=0
+        for %%P in (!CUSTOM_PAYLOAD_TRACK!) do (
+            echo %%~P | find /I "%%~E" >nul && (
+                if "!CCT_PREVIEW_COUNT!" LSS 5 set "CCT_PREVIEW=!CCT_PREVIEW! %%~P"
+                set /a CCT_PREVIEW_COUNT+=1
+            )
+        )
+        if defined CCT_PREVIEW call :DebugTrace "        [DEBUG] Payload preview %%~E (!CCT_PREVIEW_COUNT!):!CCT_PREVIEW!"
+    )
+)
+
 call :CleanCustomTemplateFiles "!WORD_DIR!" ".dotx .dotm" "!BASE_DIR!" "%LOG_FILE%" "!DESIGN_MODE!" "Word custom templates"
 call :CleanCustomTemplateFiles "!PPT_DIR!" ".potx .potm" "!BASE_DIR!" "%LOG_FILE%" "!DESIGN_MODE!" "PowerPoint custom templates"
 call :CleanCustomTemplateFiles "!EXCEL_DIR!" ".xltx .xltm" "!BASE_DIR!" "%LOG_FILE%" "!DESIGN_MODE!" "Excel custom templates"
@@ -392,6 +436,7 @@ for /f %%C in ('dir /A /B /S "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set
                 set /a CUSTOM_TOTAL_CANDIDATES+=1
                 set /a CCF_DIR_FILE_COUNT+=1
                 set "CCF_SKIP_GENERIC=0"
+                set "CCF_HAS_PAYLOAD=0"
                 for %%G in (!CUSTOM_GENERIC_SKIP_LIST!) do (
                     if /I "!CCF_FILE!"=="%%~G" set "CCF_SKIP_GENERIC=1"
                 )
@@ -402,15 +447,12 @@ for /f %%C in ('dir /A /B /S "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set
                     set /a CCF_EXT_SKIPPED+=1
                     if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[SKIP] Preserved generic template !CCF_FILE! in !CCF_LABEL!."
                 ) else (
-                    set "CCF_INSTALLER_FILE=!CCF_BASE_DIR!!CCF_FILE!"
+                    if defined CUSTOM_PAYLOAD_TRACK (
+                        echo !CUSTOM_PAYLOAD_TRACK! | find /I ";!CCF_FILE!;" >nul && set "CCF_HAS_PAYLOAD=1"
+                    )
 
-                    if exist "!CCF_INSTALLER_FILE!" (
-                        set /a CUSTOM_SKIP_COUNT+=1
-                        set /a CCF_DIR_SKIPPED+=1
-                        set /a CCF_EXT_SKIPPED+=1
-                        if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[SKIP] Preserved !CCF_FILE! in !CCF_LABEL! (installer match)."
-                    ) else (
-                        set "CCF_DELETE_REASON=no installer match"
+                    if "!CCF_HAS_PAYLOAD!"=="1" (
+                        set "CCF_DELETE_REASON=installer match"
                         del /F /Q "%%~fF" >nul 2>&1
                         if exist "%%~fF" (
                             set /a CUSTOM_ERROR_COUNT+=1
@@ -422,6 +464,22 @@ for /f %%C in ('dir /A /B /S "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set
                             set /a CCF_DIR_REMOVED+=1
                             set /a CCF_EXT_REMOVED+=1
                             if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[OK] Deleted !CCF_FILE! from !CCF_LABEL! (!CCF_DELETE_REASON!)."
+                        )
+                    ) else (
+                        set /a CUSTOM_SKIP_COUNT+=1
+                        set /a CCF_DIR_SKIPPED+=1
+                        set /a CCF_EXT_SKIPPED+=1
+                        if /I "!CCF_DESIGN_MODE!"=="true" (
+                            if defined CUSTOM_PAYLOAD_TRACK (
+                                call :DebugTrace "[SKIP] Preserved !CCF_FILE! in !CCF_LABEL! (no installer match in payload catalog)."
+                                set "CCF_PAYLOAD_HINT="
+                                for %%P in (!CUSTOM_PAYLOAD_TRACK!) do (
+                                    echo %%~P | find /I "!CCF_FILE!" >nul && set "CCF_PAYLOAD_HINT=%%~P"
+                                )
+                                if defined CCF_PAYLOAD_HINT call :DebugTrace "       payload hint: !CCF_PAYLOAD_HINT!"
+                            ) else (
+                                call :DebugTrace "[SKIP] Preserved !CCF_FILE! in !CCF_LABEL! (payload catalog empty)."
+                            )
                         )
                     )
                 )
@@ -447,6 +505,7 @@ set "CCF_LABEL="
 set "CCF_FILE="
 set "CCF_INSTALLER_FILE="
 set "CCF_SKIP_GENERIC="
+set "CCF_HAS_PAYLOAD="
 set "CCF_TOP_LEVEL_COUNT="
 set "CCF_RECURSIVE_COUNT="
 set "CCF_EXT_COUNT="
