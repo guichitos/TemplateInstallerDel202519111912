@@ -6,6 +6,12 @@ rem ===========================================================
 rem === UNIVERSAL OFFICE TEMPLATE UNINSTALLER (v1.2) ==========
 rem ===========================================================
 
+
+rem === Mode and logging configuration ========================
+rem true  = verbose mode with console messages, logging, and final pause.
+rem false = silent mode (no console output or pause).
+set "IsDesignModeEnabled=false"
+
 rem If wrapper passed the launcher directory (payload), use it.
 if not "%~1"=="" (
     set "LauncherDirectory=%~1"
@@ -22,10 +28,7 @@ if /I "%IsDesignModeEnabled%"=="true" (
     call :DebugTrace "[INFO] Launcher/payload directory resolved to: %LauncherDirectory%"
 )
 
-rem === Mode and logging configuration ========================
-rem true  = verbose mode with console messages, logging, and final pause.
-rem false = silent mode (no console output or pause).
-set "IsDesignModeEnabled=true"
+
 
 call :DebugTrace "[FLAG] Script initialization started."
 
@@ -203,6 +206,9 @@ call :DebugTrace "[FLAG] Finalizing uninstaller."
 call :Finalize "%LogFilePath%"
 
 endlocal
+
+call "1-2. LaunchOfficeApps.bat"
+
 exit /b
 
 rem Base dir resolver keeps template source tied to the unpacked executable location
@@ -371,7 +377,6 @@ endlocal
 exit /b 0
 
 :CleanCustomTemplateFiles
-echo [FLAG] CleanCustomTemplateFiles invoked with parameters %*
 set "CCF_TARGET_DIR=%~1"
 set "CCF_EXT_LIST=%~2"
 set "CCF_BASE_DIR=%~3"
@@ -480,6 +485,11 @@ set "CCF_EXT_REMOVED="
 set "CCF_EXT_SKIPPED="
 set "CCF_EXT_ERRORS="
 set "CCF_REMOVED_DIRS="
+
+
+
+rem ------------------------------------------
+
 exit /b 0
 
 
