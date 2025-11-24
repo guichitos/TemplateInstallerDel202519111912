@@ -22,6 +22,12 @@ if not "%~1"=="" (
 
 rem ScriptDirectory = real location of this uninstaller (in AppData)
 set "ScriptDirectory=%~dp0"
+set "TemplatePayloadLib=%ScriptDirectory%1-2. TemplatePayloadUtils.bat"
+
+if not exist "%TemplatePayloadLib%" (
+    echo [ERROR] Payload utility library not found: "%TemplatePayloadLib%"
+    exit /b 1
+)
 
 if /I "%IsDesignModeEnabled%"=="true" (
     call :DebugTrace "[INFO] Script directory (uninstaller) resolved to: %ScriptDirectory%"
@@ -35,14 +41,14 @@ call :DebugTrace "[FLAG] Script initialization started."
 set "UserLaunchDirectory=%CD%"
 
 rem Usamos la carpeta del launcher para resolver la payload real
-call :ResolveBaseDirectory "%LauncherDirectory%" BaseDirectoryPath
-call :ResolveBaseDirectory "%UserLaunchDirectory%" LaunchDirectoryPath
+call "%TemplatePayloadLib%" :ResolveBaseDirectory "%LauncherDirectory%" BaseDirectoryPath
+call "%TemplatePayloadLib%" :ResolveBaseDirectory "%UserLaunchDirectory%" LaunchDirectoryPath
 
 set "BaseHasPayload=0"
 set "LaunchHasPayload=0"
 
-call :HasTemplatePayload "%BaseDirectoryPath%" BaseHasPayload
-if /I not "%LaunchDirectoryPath%"=="%BaseDirectoryPath%" call :HasTemplatePayload "%LaunchDirectoryPath%" LaunchHasPayload
+call "%TemplatePayloadLib%" :HasTemplatePayload "%BaseDirectoryPath%" BaseHasPayload
+if /I not "%LaunchDirectoryPath%"=="%BaseDirectoryPath%" call "%TemplatePayloadLib%" :HasTemplatePayload "%LaunchDirectoryPath%" LaunchHasPayload
 
 if "!BaseHasPayload!"=="0" if "!LaunchHasPayload!"=="1" (
     set "BaseDirectoryPath=!LaunchDirectoryPath!"
@@ -210,47 +216,6 @@ endlocal
 call "1-2. LaunchOfficeApps.bat"
 
 exit /b
-
-rem Base dir resolver keeps template source tied to the unpacked executable location
-:ResolveBaseDirectory
-setlocal
-set "RBD_INPUT=%~1"
-set "RBD_OUTPUT_VAR=%~2"
-
-if "%RBD_INPUT:~-1%" NEQ "\\" set "RBD_INPUT=%RBD_INPUT%\\"
-
-set "RBD_FOUND="
-for %%D in ("%RBD_INPUT%" "%RBD_INPUT%payload\\" "%RBD_INPUT%templates\\" "%RBD_INPUT%extracted\\") do (
-    for %%F in ("%%~D*.dot*" "%%~D*.pot*" "%%~D*.xlt*" "%%~D*.thmx") do (
-        if exist "%%~fF" set "RBD_FOUND=%%~D"
-    )
-    if defined RBD_FOUND goto :RBD_Found
-)
-
-:RBD_Found
-if not defined RBD_FOUND set "RBD_FOUND=%RBD_INPUT%"
-
-endlocal & set "%RBD_OUTPUT_VAR%=%RBD_FOUND%"
-exit /b 0
-
-:HasTemplatePayload
-setlocal enabledelayedexpansion
-set "HP_PATH=%~1"
-set "HP_OUT=%~2"
-set "HP_FOUND=0"
-
-if not defined HP_PATH goto :HasTemplatePayloadEnd
-if "!HP_PATH:~-1!" NEQ "\\" set "HP_PATH=!HP_PATH!\\"
-
-for %%F in ("!HP_PATH!*.dot*" "!HP_PATH!*.pot*" "!HP_PATH!*.xlt*" "!HP_PATH!*.thmx") do (
-    if exist "%%~fF" set "HP_FOUND=1"
-)
-
-:HasTemplatePayloadEnd
-set "HP_RESULT=!HP_FOUND!"
-endlocal & if not "%HP_OUT%"=="" set "%HP_OUT%=%HP_RESULT%"
-exit /b 0
-
 
 
 :DetectCustomTemplatePaths

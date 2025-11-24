@@ -12,6 +12,7 @@ set "IsDesignModeEnabled=false"
 
 set "ScriptDirectory=%~dp0"
 set "BaseHint=%~1"
+set "TemplatePayloadLib=%ScriptDirectory%1-2. TemplatePayloadUtils.bat"
 
 if not defined BaseHint if defined PIN_LAUNCHER_DIR set "BaseHint=%PIN_LAUNCHER_DIR%"
 if not defined BaseHint set "BaseHint=%ScriptDirectory%"
@@ -23,7 +24,12 @@ if /I "%BaseHint%"=="%ScriptDirectory%" if /I "%ScriptDirectory:~0,12%"=="%APPDA
     exit /b 1
 )
 
-call :ResolveBaseDirectory "%BaseHint%" BaseDirectoryPath
+if not exist "%TemplatePayloadLib%" (
+    echo [ERROR] Payload utility library not found: "%TemplatePayloadLib%"
+    exit /b 1
+)
+
+call "%TemplatePayloadLib%" :ResolveBaseDirectory "%BaseHint%" BaseDirectoryPath
 if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Base directory resolved to: %BaseDirectoryPath%
 
 set "OfficeTemplateLib=%ScriptDirectory%1-2. AuthContainerTools.bat"
@@ -375,27 +381,6 @@ endlocal & (
 
 
 exit /b %CTA_FinalError%
-
-:ResolveBaseDirectory
-setlocal
-set "RBD_INPUT=%~1"
-set "RBD_OUTPUT_VAR=%~2"
-
-if "%RBD_INPUT:~-1%" NEQ "\\" set "RBD_INPUT=%RBD_INPUT%\\"
-
-set "RBD_FOUND="
-for %%D in ("%RBD_INPUT%" "%RBD_INPUT%payload\\" "%RBD_INPUT%templates\\" "%RBD_INPUT%extracted\\"") do (
-    for %%F in ("%%~D*.dot*" "%%~D*.pot*" "%%~D*.xlt*" "%%~D*.thmx") do (
-        if exist "%%~fF" set "RBD_FOUND=%%~D"
-    )
-    if defined RBD_FOUND goto :ResolveBaseDirectoryFound
-)
-
-:ResolveBaseDirectoryFound
-if not defined RBD_FOUND set "RBD_FOUND=%RBD_INPUT%"
-
-endlocal & set "%RBD_OUTPUT_VAR%=%RBD_FOUND%"
-exit /b 0
 
 :InstallApp
 setlocal EnableDelayedExpansion
