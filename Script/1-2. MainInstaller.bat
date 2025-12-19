@@ -98,6 +98,8 @@ set "GLOBAL_ITEM_COUNT_PPT=0"
 set "GLOBAL_ITEM_COUNT_EXCEL=0"
 set "LAST_INSTALL_STATUS=0"
 set "LAST_INSTALLED_PATH="
+set "PENDING_OPEN_TOTAL=0"
+set "PENDING_OPEN_INDEX=0"
 set "OPENED_TEMPLATE_FOLDERS=;"
 set "WORD_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "PPT_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
@@ -139,6 +141,8 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Completed CopyAll invocation block (errorlevel=!CopyAllErrorLevel!)
 )
 
+call :ProcessQueuedFolderOpens "%IsDesignModeEnabled%"
+
 if /I "%IsDesignModeEnabled%"=="true" (
     echo.
     echo [FINAL] Universal Office Template installation completed successfully.
@@ -154,52 +158,52 @@ set "IBT_DesignMode=%~1"
 call :InstallApp "WORD" "Normal.dotx" "%APPDATA%\Microsoft\Templates" "Normal.dotx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    call :QueueTemplateFolderOpen "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "WORD" "Normal.dotm" "%APPDATA%\Microsoft\Templates" "Normal.dotm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    call :QueueTemplateFolderOpen "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "WORD" "NormalEmail.dotx" "%APPDATA%\Microsoft\Templates" "NormalEmail.dotx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    call :QueueTemplateFolderOpen "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "WORD" "NormalEmail.dotm" "%APPDATA%\Microsoft\Templates" "NormalEmail.dotm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    call :QueueTemplateFolderOpen "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "POWERPOINT" "Blank.potx" "%APPDATA%\Microsoft\Templates" "Blank.potx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
-    call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    call :QueueTemplateFolderOpen "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "POWERPOINT" "Blank.potm" "%APPDATA%\Microsoft\Templates" "Blank.potm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
-    call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    call :QueueTemplateFolderOpen "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "EXCEL" "Book.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    call :QueueTemplateFolderOpen "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "EXCEL" "Book.xltm" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    call :QueueTemplateFolderOpen "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "EXCEL" "Sheet.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Sheet.xltx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    call :QueueTemplateFolderOpen "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "EXCEL" "Sheet.xltm" "%APPDATA%\Microsoft\Excel\XLSTART" "Sheet.xltm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    call :QueueTemplateFolderOpen "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
 )
 exit /b 0
 
@@ -706,6 +710,57 @@ taskkill /IM EXCEL.EXE /F >nul 2>&1
 echo [DEBUG] Exiting Closing Office applications...
 exit /b
 
+:QueueTemplateFolderOpen
+set "QTF_PATH=%~1"
+set "QTF_DESIGN=%~2"
+set "QTF_LABEL=%~3"
+set "QTF_SELECT=%~4"
+
+if "%QTF_PATH%"=="" exit /b
+if not exist "%QTF_PATH%" exit /b
+if "%QTF_LABEL%"=="" set "QTF_LABEL=template folder"
+
+set /a PENDING_OPEN_INDEX+=1
+if !PENDING_OPEN_INDEX! gtr !PENDING_OPEN_TOTAL! set "PENDING_OPEN_TOTAL=!PENDING_OPEN_INDEX!"
+set "PENDING_OPEN_PATH_!PENDING_OPEN_INDEX!=%QTF_PATH%"
+set "PENDING_OPEN_DESIGN_!PENDING_OPEN_INDEX!=%QTF_DESIGN%"
+set "PENDING_OPEN_LABEL_!PENDING_OPEN_INDEX!=%QTF_LABEL%"
+set "PENDING_OPEN_SELECT_!PENDING_OPEN_INDEX!=%QTF_SELECT%"
+exit /b
+
+:ProcessQueuedFolderOpens
+setlocal EnableDelayedExpansion
+set "P_Q_DESIGN=%~1"
+
+if not defined PENDING_OPEN_TOTAL (
+    endlocal
+    exit /b
+)
+
+set "P_Q_COUNT=!PENDING_OPEN_TOTAL!"
+if "!P_Q_COUNT!"=="0" (
+    endlocal
+    exit /b
+)
+
+for /L %%I in (1,1,!P_Q_COUNT!) do (
+    set "P_Q_PATH=!PENDING_OPEN_PATH_%%I!"
+    if not "!P_Q_PATH!"=="" (
+        set "P_Q_LABEL=!PENDING_OPEN_LABEL_%%I!"
+        set "P_Q_SELECT=!PENDING_OPEN_SELECT_%%I!"
+        set "P_Q_MODE=!PENDING_OPEN_DESIGN_%%I!"
+        if "!P_Q_MODE!"=="" set "P_Q_MODE=!P_Q_DESIGN!"
+        call :OpenTemplateFolder "!P_Q_PATH!" "!P_Q_MODE!" "!P_Q_LABEL!" "!P_Q_SELECT!"
+    )
+)
+
+endlocal & (
+    set "OPENED_TEMPLATE_FOLDERS=%OPENED_TEMPLATE_FOLDERS%"
+    set "PENDING_OPEN_TOTAL=0"
+    set "PENDING_OPEN_INDEX=0"
+)
+exit /b
+
 :OpenTemplateFolder
 set "TARGET_PATH=%~1"
 set "DESIGN_MODE=%~2"
@@ -1012,19 +1067,19 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 
 if "!OPEN_WORD!"=="1" if exist "!WORD_PATH!" (
-    call :OpenTemplateFolder "!WORD_PATH!" "" "%IsDesignModeEnabled%" "Word template folder" "!WORD_SELECT!"
+    call :QueueTemplateFolderOpen "!WORD_PATH!" "" "%IsDesignModeEnabled%" "Word template folder" "!WORD_SELECT!"
 )
 
 if "!OPEN_PPT!"=="1" if exist "!PPT_PATH!" (
-    call :OpenTemplateFolder "!PPT_PATH!" "" "%IsDesignModeEnabled%" "PowerPoint template folder" "!PPT_SELECT!"
+    call :QueueTemplateFolderOpen "!PPT_PATH!" "" "%IsDesignModeEnabled%" "PowerPoint template folder" "!PPT_SELECT!"
 )
 
 if "!OPEN_EXCEL!"=="1" if exist "!EXCEL_PATH!" (
-    call :OpenTemplateFolder "!EXCEL_PATH!" "" "%IsDesignModeEnabled%" "Excel template folder" "!EXCEL_SELECT!"
+    call :QueueTemplateFolderOpen "!EXCEL_PATH!" "" "%IsDesignModeEnabled%" "Excel template folder" "!EXCEL_SELECT!"
 )
 
 if "!OPEN_THEME!"=="1" if exist "!THEME_PATH!" (
-    call :OpenTemplateFolder "!THEME_PATH!" "" "%IsDesignModeEnabled%" "Document Themes folder" "!THEME_SELECT!"
+    call :QueueTemplateFolderOpen "!THEME_PATH!" "" "%IsDesignModeEnabled%" "Document Themes folder" "!THEME_SELECT!"
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
@@ -1040,10 +1095,17 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo ----------------------------------------------------------
 )
 
+set "QUEUE_EXPORT="
+for /f "tokens=1* delims==" %%A in ('set PENDING_OPEN_ 2^>nul') do (
+    set "QUEUE_EXPORT=!QUEUE_EXPORT!set \"%%A=%%B\"^&"
+)
+
 endlocal & (
     set "FORCE_OPEN_WORD=%OPEN_WORD%"
     set "FORCE_OPEN_PPT=%OPEN_PPT%"
     set "FORCE_OPEN_EXCEL=%OPEN_EXCEL%"
+    %QUEUE_EXPORT% set "PENDING_OPEN_TOTAL=%PENDING_OPEN_TOTAL%"
+    set "PENDING_OPEN_INDEX=%PENDING_OPEN_INDEX%"
 )
 exit /b
 
