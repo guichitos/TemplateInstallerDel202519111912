@@ -96,6 +96,8 @@ set "FORCE_OPEN_EXCEL=0"
 set "GLOBAL_ITEM_COUNT_WORD=0"
 set "GLOBAL_ITEM_COUNT_PPT=0"
 set "GLOBAL_ITEM_COUNT_EXCEL=0"
+set "OPEN_BASE_TEMPLATE_FOLDER=false"
+set "BASE_TEMPLATE_LAST_PATH="
 set "LAST_INSTALL_STATUS=0"
 set "LAST_INSTALLED_PATH="
 set "PENDING_OPEN_TOTAL=0"
@@ -142,6 +144,7 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 
 call :ProcessQueuedFolderOpens "%IsDesignModeEnabled%"
+call :ProcessBaseTemplateFolderOpen "%OPEN_BASE_TEMPLATE_FOLDER%" "%WORD_BASE_TEMPLATE_DIR%" "%BASE_TEMPLATE_LAST_PATH%" "%IsDesignModeEnabled%"
 
 if /I "%IsDesignModeEnabled%"=="true" (
     echo.
@@ -158,32 +161,38 @@ set "IBT_DesignMode=%~1"
 call :InstallApp "WORD" "Normal.dotx" "%APPDATA%\Microsoft\Templates" "Normal.dotx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :QueueTemplateFolderOpen "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    set "OPEN_BASE_TEMPLATE_FOLDER=true"
+    set "BASE_TEMPLATE_LAST_PATH=!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "WORD" "Normal.dotm" "%APPDATA%\Microsoft\Templates" "Normal.dotm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :QueueTemplateFolderOpen "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    set "OPEN_BASE_TEMPLATE_FOLDER=true"
+    set "BASE_TEMPLATE_LAST_PATH=!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "WORD" "NormalEmail.dotx" "%APPDATA%\Microsoft\Templates" "NormalEmail.dotx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :QueueTemplateFolderOpen "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    set "OPEN_BASE_TEMPLATE_FOLDER=true"
+    set "BASE_TEMPLATE_LAST_PATH=!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "WORD" "NormalEmail.dotm" "%APPDATA%\Microsoft\Templates" "NormalEmail.dotm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :QueueTemplateFolderOpen "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    set "OPEN_BASE_TEMPLATE_FOLDER=true"
+    set "BASE_TEMPLATE_LAST_PATH=!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "POWERPOINT" "Blank.potx" "%APPDATA%\Microsoft\Templates" "Blank.potx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
-    call :QueueTemplateFolderOpen "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    set "OPEN_BASE_TEMPLATE_FOLDER=true"
+    set "BASE_TEMPLATE_LAST_PATH=!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "POWERPOINT" "Blank.potm" "%APPDATA%\Microsoft\Templates" "Blank.potm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
-    call :QueueTemplateFolderOpen "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    set "OPEN_BASE_TEMPLATE_FOLDER=true"
+    set "BASE_TEMPLATE_LAST_PATH=!LAST_INSTALLED_PATH!"
 )
 call :InstallApp "EXCEL" "Book.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
@@ -761,6 +770,19 @@ endlocal & (
     set "OPENED_TEMPLATE_FOLDERS=%OPENED_TEMPLATE_FOLDERS%"
     set "PENDING_OPEN_TOTAL=0"
     set "PENDING_OPEN_INDEX=0"
+)
+exit /b
+
+:ProcessBaseTemplateFolderOpen
+set "PB_OPEN_FLAG=%~1"
+set "PB_TARGET_PATH=%~2"
+set "PB_SELECT_PATH=%~3"
+set "PB_DESIGN_MODE=%~4"
+
+if /I "%PB_OPEN_FLAG%"=="true" (
+    call :OpenTemplateFolder "%PB_TARGET_PATH%" "%PB_DESIGN_MODE%" "base Office template folder" "%PB_SELECT_PATH%"
+) else if /I "%PB_DESIGN_MODE%"=="true" (
+    echo [INFO] Skipping base Office template folder opening because the flag is set to false.
 )
 exit /b
 
