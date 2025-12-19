@@ -732,12 +732,15 @@ exit /b
 setlocal EnableDelayedExpansion
 set "P_Q_DESIGN=%~1"
 
-if not defined PENDING_OPEN_TOTAL (
-    endlocal
-    exit /b
+set "P_Q_COUNT=0"
+if defined PENDING_OPEN_TOTAL set "P_Q_COUNT=!PENDING_OPEN_TOTAL!"
+
+for /f "tokens=1* delims==" %%A in ('set PENDING_OPEN_PATH_ 2^>nul') do (
+    for /f "tokens=4 delims=_" %%B in ("%%A") do (
+        if %%B gtr !P_Q_COUNT! set "P_Q_COUNT=%%B"
+    )
 )
 
-set "P_Q_COUNT=!PENDING_OPEN_TOTAL!"
 if "!P_Q_COUNT!"=="0" (
     endlocal
     exit /b
