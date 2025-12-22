@@ -11,11 +11,16 @@ set "OPEN_ROAMING=%~3"
 set "OPEN_EXCEL=%~4"
 set "OPEN_CUSTOM_ALT=%~5"
 set "SELECT_FILES=%~6"
+
 set "THEME_FILE=%~7"
 set "CUSTOM_FILE=%~8"
 set "ROAMING_FILE=%~9"
-set "EXCEL_FILE=%~10"
-set "CUSTOM_ALT_FILE=%~11"
+
+:: Shift forward so %1 represents the original 10th argument and %2 the 11th
+shift & shift & shift & shift & shift & shift & shift & shift & shift
+
+set "EXCEL_FILE=%~1"
+set "CUSTOM_ALT_FILE=%~2"
 
 if not defined OPEN_THEME set "OPEN_THEME=1"
 if not defined OPEN_CUSTOM set "OPEN_CUSTOM=1"
